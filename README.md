@@ -9,7 +9,6 @@ A Python-based mini cybersecurity project that demonstrates how the **Caesar Cip
 - 🔒 **Caesar Cipher Encryption & Decryption** — shift-based ASCII character manipulation
 - 💥 **Brute Force Attack** — tries all 25 possible shift keys to crack the cipher
 - 📊 **Frequency Analysis Attack** — exploits letter frequency patterns in English to guess the key without knowing it
-- 🎓 **Educational** — demonstrates why classical ciphers offer zero real-world security
 
 ---
 
