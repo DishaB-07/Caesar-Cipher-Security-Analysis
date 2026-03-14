@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caesar Cipher Security Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #0a0d14;
+            --surface: #111520;
+            --surface2: #161c2d;
+            --border: #1e2a45;
+            --accent: #00e5ff;
+            --accent2: #7c3aed;
+            --accent3: #f59e0b;
+            --green: #10b981;
+            --red: #ef4444;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --mono: 'Share Tech Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2.5rem 2rem;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent3));
+        }
+
+        .header-tag {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--accent);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .header-sub {
+            margin-top: 0.5rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-family: var(--mono);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 5px;
+            border-radius: 4px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.6rem 0.8rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 3px;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: center;
+        }
+
+        .tab:hover {
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .tab.active {
+            background: var(--surface2);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .card-title {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 3px;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--accent);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .shift-wrap {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .shift-wrap input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+            height: 4px;
+            cursor: pointer;
+        }
+
+        .shift-number {
+            font-family: var(--mono);
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 2.5rem;
+            text-align: right;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            padding: 0.65rem 1.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .btn:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn.purple {
+            border-color: var(--accent2);
+            color: var(--accent2);
+        }
+
+        .btn.purple:hover {
+            background: var(--accent2);
+            color: #fff;
+        }
+
+        .btn.amber {
+            border-color: var(--accent3);
+            color: var(--accent3);
+        }
+
+        .btn.amber:hover {
+            background: var(--accent3);
+            color: var(--bg);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .output-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 3px;
+            padding: 1rem 1.1rem;
+            font-family: var(--mono);
+            font-size: 0.88rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 48px;
+            color: var(--text);
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .output-box.green  { border-left-color: var(--green); }
+        .output-box.purple { border-left-color: var(--accent2); }
+
+        .output-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-top: 1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 0.62rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1.5rem 0;
+        }
+
+        .info-box {
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 3px;
+            padding: 0.7rem 1rem;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: var(--accent);
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .mode-btn.active {
+            background: var(--surface2);
+            border-color: var(--accent3);
+            color: var(--accent3);
+        }
+
+        .bf-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.7rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            margin-bottom: 0.5rem;
+            background: var(--bg);
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+
+        .bf-row:hover {
+            border-color: var(--accent);
+        }
+
+        .bf-row.best {
+            border-color: var(--green);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .bf-key {
+            font-family: var(--mono);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            min-width: 2.5rem;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .bf-details {
+            flex: 1;
+        }
+
+        .bf-text {
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .score-bar {
+            height: 3px;
+            border-radius: 2px;
+            margin-top: 6px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--accent2), var(--accent));
+            transition: width 0.5s ease;
+        }
+
+        .best-label {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            background: var(--green);
+            color: var(--bg);
+            padding: 0.15rem 0.5rem;
+            border-radius: 2px;
+            text-transform: uppercase;
+            align-self: flex-start;
+            margin-top: 2px;
+        }
+
+        .freq-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 4px;
+        }
+
+        .freq-letter {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--accent);
+            width: 1.2rem;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .freq-bar-bg {
+            flex: 1;
+            height: 14px;
+            background: var(--surface2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .freq-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent2), var(--accent));
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        .freq-count {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+            min-width: 3.5rem;
+            text-align: right;
+        }
+
+        .keyword-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .key-char {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            color: var(--accent3);
+            font-weight: 700;
+        }
+
+        ::-webkit-scrollbar       { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <div class="header-tag">// cybersecurity project</div>
+        <h1>Caesar Cipher<br><span>Security Analysis</span></h1>
+        <div class="header-sub">encrypt · crack · analyse · explore</div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('caesar')">Caesar Cipher</button>
+        <button class="tab" onclick="switchTab('brute')">Brute Force</button>
+        <button class="tab" onclick="switchTab('freq')">Freq Analysis</button>
+        <button class="tab" onclick="switchTab('vigenere')">Vigenère</button>
+    </div>
+
+    <div class="panel active" id="panel-caesar">
+        <div class="card">
+            <div class="card-title">Caesar Cipher — Encrypt / Decrypt</div>
+
+            <div class="info-box">
+                Caesar cipher shifts each letter by a fixed number. With <strong>26 possible keys</strong>, it can be broken in seconds — but it's the foundation of all substitution ciphers.
+            </div>
+
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="mode-enc" onclick="setCaesarMode('encrypt')">▲ Encrypt</button>
+                <button class="mode-btn" id="mode-dec" onclick="setCaesarMode('decrypt')">▼ Decrypt</button>
+            </div>
+
+            <label>Input Message</label>
+            <textarea id="caesar-input" placeholder="Type your message here..." rows="3" oninput="runCaesar()"></textarea>
+
+            <label>Shift Key</label>
+            <div class="shift-wrap">
+                <input type="range" min="1" max="25" value="13" id="caesar-shift" oninput="document.getElementById('shift-display').textContent = this.value; runCaesar()">
+                <div class="shift-number" id="shift-display">13</div>
+            </div>
+
+            <p class="output-label" id="caesar-out-label">Encrypted Output</p>
+            <div class="output-box" id="caesar-output">—
+                <button class="copy-btn" onclick="copyText('caesar-output')">copy</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="output-label">Cipher Alphabet Preview</p>
+            <div id="alphabet-preview" style="font-family: var(--mono); font-size: 0.72rem; color: var(--muted); line-height: 2;"></div>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-brute">
+        <div class="card">
+            <div class="card-title">Brute Force Attack</div>
+
+            <div class="info-box">
+                Tries all <strong>25 possible keys</strong> automatically. An English-scoring algorithm ranks results by letter frequency and common word matches — no human guessing needed.
+            </div>
+
+            <label>Encrypted Message</label>
+            <textarea id="bf-input" placeholder="Paste your ciphertext here..." rows="3"></textarea>
+
+            <div class="btn-group">
+                <button class="btn" onclick="runBruteForce()">Run Attack</button>
+                <button class="btn purple" onclick="loadBfSample()">Load Sample</button>
+            </div>
+        </div>
+
+        <div id="bf-results"></div>
+    </div>
+
+    <div class="panel" id="panel-freq">
+        <div class="card">
+            <div class="card-title">Frequency Analysis Attack</div>
+
+            <div class="info-box">
+                In English, <strong>'E'</strong> appears ~12.7% of the time. If we find the most frequent letter in the ciphertext, we can guess the shift. Works best on <strong>100+ character</strong> messages.
+            </div>
+
+            <label>Encrypted Message</label>
+            <textarea id="freq-input" placeholder="Paste your ciphertext here..." rows="3"></textarea>
+
+            <div class="btn-group">
+                <button class="btn amber" onclick="runFreqAnalysis()">Analyse</button>
+                <button class="btn purple" onclick="loadFreqSample()">Load Sample</button>
+            </div>
+        </div>
+
+        <div id="freq-results"></div>
+    </div>
+
+    <div class="panel" id="panel-vigenere">
+        <div class="card">
+            <div class="card-title">Vigenère Cipher</div>
+
+            <div class="info-box">
+                Uses a <strong>keyword</strong> as the key — each letter of the keyword becomes the shift for the corresponding plaintext letter. Much harder to crack than Caesar because the key cycles.
+            </div>
+
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="vig-enc-btn" onclick="setVigMode('encrypt')">▲ Encrypt</button>
+                <button class="mode-btn" id="vig-dec-btn" onclick="setVigMode('decrypt')">▼ Decrypt</button>
+            </div>
+
+            <label>Message</label>
+            <textarea id="vig-input" placeholder="Enter your message..." rows="3" oninput="runVigenere()"></textarea>
+
+            <label>Keyword <span style="color: var(--muted)">(letters only)</span></label>
+            <input type="text" id="vig-keyword" placeholder="e.g. SECRET" oninput="updateKeyDisplay(); runVigenere()">
+
+            <div class="keyword-display" id="key-display"></div>
+
+            <p class="output-label" id="vig-out-label">Encrypted Output</p>
+            <div class="output-box purple" id="vig-output">—
+                <button class="copy-btn" onclick="copyText('vig-output')">copy</button>
+            </div>
+
+            <div class="divider"></div>
+            <div id="vig-table-wrap"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let caesarMode = 'encrypt';
+
+    function setCaesarMode(mode) {
+        caesarMode = mode;
+        document.getElementById('mode-enc').classList.toggle('active', mode === 'encrypt');
+        document.getElementById('mode-dec').classList.toggle('active', mode === 'decrypt');
+        document.getElementById('caesar-out-label').textContent = mode === 'encrypt' ? 'Encrypted Output' : 'Decrypted Output';
+        runCaesar();
+    }
+
+    function shiftChar(char, shift) {
+        if (/[A-Z]/.test(char)) return String.fromCharCode((char.charCodeAt(0) - 65 + shift + 26) % 26 + 65);
+        if (/[a-z]/.test(char)) return String.fromCharCode((char.charCodeAt(0) - 97 + shift + 26) % 26 + 97);
+        return char;
+    }
+
+    function caesarEncrypt(text, shift) {
+        return text.split('').map(c => shiftChar(c, shift)).join('');
+    }
+
+    function caesarDecrypt(text, shift) {
+        return caesarEncrypt(text, -shift);
+    }
+
+    function runCaesar() {
+        const text = document.getElementById('caesar-input').value;
+        const shift = parseInt(document.getElementById('caesar-shift').value);
+        const result = caesarMode === 'encrypt' ? caesarEncrypt(text, shift) : caesarDecrypt(text, shift);
+        document.getElementById('caesar-output').childNodes[0].textContent = result || '—';
+        updateAlphabet(shift);
+    }
+
+    function updateAlphabet(shift) {
+        const plain = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const cipher = plain.split('').map(c => shiftChar(c, shift)).join('');
+        document.getElementById('alphabet-preview').innerHTML =
+            `<span style="color: var(--muted)">Plain : </span><span style="color: var(--text)">${plain}</span><br>` +
+            `<span style="color: var(--muted)">Cipher: </span><span style="color: var(--accent)">${cipher}</span>`;
+    }
+
+    updateAlphabet(13);
+
+    const ENGLISH_FREQ = {
+        E: 12.7, T: 9.06, A: 8.17, O: 7.51, I: 6.97, N: 6.75, S: 6.33,
+        H: 6.09, R: 5.99, D: 4.25, L: 4.03, C: 2.78, U: 2.76, M: 2.41,
+        W: 2.36, F: 2.23, G: 2.02, Y: 1.97, P: 1.93, B: 1.29, V: 0.98,
+        K: 0.77, J: 0.15, X: 0.15, Q: 0.10, Z: 0.07
+    };
+
+    const COMMON_WORDS = new Set([
+        'THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL',
+        'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'HAS', 'HIS',
+        'HOW', 'ITS', 'WHO', 'DID', 'YES', 'THIS', 'THAT', 'WITH',
+        'HAVE', 'FROM', 'THEY', 'BEEN', 'WILL'
+    ]);
+
+    function scoreEnglish(text) {
+        const upper = text.toUpperCase();
+        const letters = upper.split('').filter(c => /[A-Z]/.test(c));
+        if (!letters.length) return 0;
+        const freqScore = letters.reduce((sum, c) => sum + (ENGLISH_FREQ[c] || 0), 0) / letters.length;
+        const wordBonus = upper.split(/\W+/).filter(w => COMMON_WORDS.has(w)).length * 3;
+        return freqScore + wordBonus;
+    }
+
+    function loadBfSample() {
+        document.getElementById('bf-input').value = 'Khoor, Zruog! Wklv lv d vhfuhw phvvdjh hqfubswhg zlwk d vkliw ri wkuhh.';
+    }
+
+    function runBruteForce() {
+        const cipher = document.getElementById('bf-input').value.trim();
+        if (!cipher) {
+            alert('Please enter a ciphertext.');
+            return;
+        }
+
+        const results = [];
+        for (let key = 1; key <= 25; key++) {
+            const text = caesarDecrypt(cipher, key);
+            const score = scoreEnglish(text);
+            results.push({ key, text, score });
+        }
+        results.sort((a, b) => b.score - a.score);
+
+        const maxScore = results[0].score;
+        document.getElementById('bf-results').innerHTML = `
+            <div class="card fade-in">
+                <div class="card-title">Attack Results — ${results.length} keys tried</div>
+                <div id="bf-list"></div>
+            </div>`;
+
+        const list = document.getElementById('bf-list');
+        results.forEach((r, i) => {
+            const pct = maxScore > 0 ? (r.score / maxScore * 100).toFixed(1) : 0;
+            const div = document.createElement('div');
+            div.className = 'bf-row' + (i === 0 ? ' best' : '');
+            div.innerHTML = `
+                <div class="bf-key">${r.key}</div>
+                <div class="bf-details">
+                    <div class="bf-text">${escHtml(r.text)}</div>
+                    <div class="score-bar"><div class="score-fill" style="width: ${pct}%"></div></div>
+                </div>
+                ${i === 0 ? '<div class="best-label">Best</div>' : ''}`;
+            list.appendChild(div);
+        });
+    }
+
+    function loadFreqSample() {
+        document.getElementById('freq-input').value = 'Wkh txlfn eurzq ira mxpsv ryhu wkh odcb grj. Hyhub jrrg erbx qhhgv d sodq. Wkh zhdwkhu lv qlfh wrgdb.';
+    }
+
+    function runFreqAnalysis() {
+        const cipher = document.getElementById('freq-input').value.trim();
+        if (!cipher) {
+            alert('Please enter a ciphertext.');
+            return;
+        }
+
+        const freq = {};
+        for (const c of cipher.toUpperCase()) {
+            if (/[A-Z]/.test(c)) freq[c] = (freq[c] || 0) + 1;
+        }
+
+        const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+        const total = sorted.reduce((sum, [, count]) => sum + count, 0);
+        const maxCount = sorted[0]?.[1] || 1;
+        const mostFreq = sorted[0]?.[0] || 'E';
+        const guessedKey = (mostFreq.charCodeAt(0) - 'E'.charCodeAt(0) + 26) % 26;
+        const decrypted = caesarDecrypt(cipher, guessedKey);
+
+        document.getElementById('freq-results').innerHTML = `
+            <div class="card fade-in">
+                <div class="card-title">Letter Frequency Chart</div>
+                <div id="freq-chart"></div>
+            </div>
+            <div class="card fade-in">
+                <div class="card-title">Analysis Result</div>
+                <div class="info-box">
+                    Most frequent letter: <strong>${mostFreq}</strong> &nbsp;·&nbsp;
+                    Assumed to be <strong>E</strong> &nbsp;·&nbsp;
+                    Guessed key: <strong>${guessedKey}</strong>
+                </div>
+                <p class="output-label">Decrypted Text</p>
+                <div class="output-box green">${escHtml(decrypted)}<button class="copy-btn" onclick="copyText(this.parentElement)">copy</button></div>
+            </div>`;
+
+        const chart = document.getElementById('freq-chart');
+        sorted.forEach(([letter, count]) => {
+            const pct = (count / maxCount * 100).toFixed(1);
+            const row = document.createElement('div');
+            row.className = 'freq-row';
+            row.innerHTML = `
+                <div class="freq-letter">${letter}</div>
+                <div class="freq-bar-bg"><div class="freq-bar-fill" style="width: ${pct}%"></div></div>
+                <div class="freq-count">${count} (${(count / total * 100).toFixed(1)}%)</div>`;
+            chart.appendChild(row);
+        });
+    }
+
+    let vigMode = 'encrypt';
+
+    function setVigMode(mode) {
+        vigMode = mode;
+        document.getElementById('vig-enc-btn').classList.toggle('active', mode === 'encrypt');
+        document.getElementById('vig-dec-btn').classList.toggle('active', mode === 'decrypt');
+        document.getElementById('vig-out-label').textContent = mode === 'encrypt' ? 'Encrypted Output' : 'Decrypted Output';
+        runVigenere();
+    }
+
+    function updateKeyDisplay() {
+        const kw = document.getElementById('vig-keyword').value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+        document.getElementById('key-display').innerHTML = kw.split('').map(c => `<div class="key-char">${c}</div>`).join('');
+    }
+
+    function vigCipher(text, keyword, encrypt) {
+        const kw = keyword.replace(/[^a-zA-Z]/g, '').toUpperCase();
+        if (!kw) return text;
+        let ki = 0;
+        return text.split('').map(c => {
+            if (/[A-Za-z]/.test(c)) {
+                const shift = kw.charCodeAt(ki % kw.length) - 65;
+                ki++;
+                return shiftChar(c, encrypt ? shift : -shift);
+            }
+            return c;
+        }).join('');
+    }
+
+    function runVigenere() {
+        const text = document.getElementById('vig-input').value;
+        const kw = document.getElementById('vig-keyword').value;
+        const result = vigCipher(text, kw, vigMode === 'encrypt');
+        document.getElementById('vig-output').childNodes[0].textContent = result || '—';
+        if (kw.replace(/[^a-zA-Z]/g, '') && text) {
+            renderVigTable(text, kw, vigMode === 'encrypt');
+        }
+    }
+
+    function renderVigTable(text, keyword, encrypt) {
+        const kw = keyword.replace(/[^a-zA-Z]/g, '').toUpperCase();
+        if (!kw) return;
+        const letters = text.split('').filter(c => /[A-Za-z]/.test(c)).slice(0, 20);
+        if (!letters.length) return;
+
+        let rows = [
+            '<div class="card fade-in"><div class="card-title">Encoding Preview (first 20 letters)</div>',
+            '<div style="overflow-x: auto"><table style="width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.75rem">',
+            '<tr>',
+            '<td style="color: var(--muted); padding: 4px 8px">Plain</td>',
+            letters.map(c => `<td style="text-align: center; padding: 4px 5px; color: var(--text)">${c.toUpperCase()}</td>`).join(''),
+            '</tr><tr>',
+            '<td style="color: var(--muted); padding: 4px 8px">Key</td>',
+        ];
+
+        let ki = 0;
+        letters.forEach(() => {
+            rows.push(`<td style="text-align: center; padding: 4px 5px; color: var(--accent3)">${kw[ki++ % kw.length]}</td>`);
+        });
+
+        rows.push('</tr><tr>');
+        rows.push('<td style="color: var(--muted); padding: 4px 8px">Cipher</td>');
+        ki = 0;
+        letters.forEach(c => {
+            const shift = kw.charCodeAt(ki++ % kw.length) - 65;
+            const out = shiftChar(c, encrypt ? shift : -shift);
+            rows.push(`<td style="text-align: center; padding: 4px 5px; color: var(--accent)">${out.toUpperCase()}</td>`);
+        });
+
+        rows.push('</tr></table></div></div>');
+        document.getElementById('vig-table-wrap').innerHTML = rows.join('');
+    }
+
+    function switchTab(name) {
+        const names = ['caesar', 'brute', 'freq', 'vigenere'];
+        document.querySelectorAll('.tab').forEach((tab, i) => {
+            tab.classList.toggle('active', names[i] === name);
+        });
+        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+        document.getElementById('panel-' + name).classList.add('active');
+    }
+
+    function copyText(elOrId) {
+        const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+        const text = el.childNodes[0]?.textContent?.trim() || el.textContent.trim();
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = el.querySelector?.('.copy-btn') || el;
+            if (btn) {
+                btn.textContent = 'copied!';
+                setTimeout(() => btn.textContent = 'copy', 1500);
+            }
+        });
+    }
+
+    function escHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+</script>
+
+</body>
+</html>
